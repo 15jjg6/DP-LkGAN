@@ -13,7 +13,6 @@ import tensorflow as tf
 import pickle
 
 
-
 class DP_LkGAN: 
     def __init__(self, train_images, train_labels, BATCH_SIZE=256, BUFFER_SIZE=1000):
         self.train_dataset = tf.data.Dataset.from_tensor_slices(train_images).shuffle(BUFFER_SIZE).batch(BATCH_SIZE)
@@ -29,10 +28,12 @@ class DP_LkGAN:
         # dan and Sean 
         pass
 
+
     def calculate_clipping(self, sigma):
         # dan and Sean
         pass
-    
+
+
     def make_generator_model(self):
         model = tf.keras.Sequential()
         model.add(layers.Dense(7*7*256, use_bias=False, input_shape=(100,)))
@@ -57,6 +58,7 @@ class DP_LkGAN:
 
         return model
 
+
     def make_discriminator_model(self):
         model = tf.keras.Sequential()
         model.add(layers.Conv2D(64, (5, 5), strides=(2, 2), padding='same', input_shape=[28, 28, 1]))
@@ -72,6 +74,7 @@ class DP_LkGAN:
 
         return model
 
+
     def dis_loss_wrapper(self, beta, alpha):
         def dis_loss_def(real_output, fake_output):
                 a = tf.math.reduce_mean(tf.math.pow(real_output - beta, 2.0 * tf.ones_like(real_output)))
@@ -79,13 +82,14 @@ class DP_LkGAN:
                 return 1/2.0 * (a + b)
 
         return dis_loss_def 
-    
+
 
     def gen_loss_wrapper(self, gamma, k):
         def gen_loss_def(fake_output):
             return tf.math.reduce_mean(tf.math.pow(tf.math.abs(fake_output - gamma),
                                                     k * tf.ones_like(fake_output)))
         return gen_loss_def
+
 
     @tf.function
     def train_step(self, images, k, gamma, beta, alpha, sigma, c_val):
@@ -151,7 +155,6 @@ class DP_LkGAN:
         predictions = self.generator(seed, training=False)
         strings = [str(x).replace(".", "_") for x in [alpha, beta, gamma, k, c_val, sigma]].join("-")
         pickle.dump(predictions, open( f"vals_{strings}​​​​​.p", "wb" ))
-        
 
         print (f'Training Complete...\nSummary of data:\nSigma: {sigma}\n' + 
                 f'C:     {c_val}\nNumber of Epochs: {self.EPOCHS}\nAverage Epoch ' + 
@@ -189,7 +192,8 @@ class DP_LkGAN:
         self.EPOCHS = EPOCHS
         print("hello, world")
         self.train(alpha,beta,gamma,k,c_val,sigma)
-    
+
+
     def train_experiment(self):
         pass
 
