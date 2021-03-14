@@ -14,21 +14,22 @@ import pickle
 
 
 class DP_LkGAN: 
-    def __init__(self, train_images, train_labels, BATCH_SIZE=256, BUFFER_SIZE=1000):
-        self.train_dataset = tf.data.Dataset.from_tensor_slices(train_images).shuffle(BUFFER_SIZE).batch(BATCH_SIZE)
-        # self.train_images = train_images[train_labels == desired_digit]
+    def __init__(self):
+        pass
+    # def __init__(self, train_images, train_labels, batch_size=256, buffer_size=60000):
+    #     self.train_dataset = tf.data.Dataset.from_tensor_slices(train_images).shuffle(BUFFER_SIZE).batch(BATCH_SIZE)
+    #     # self.train_images = train_images[train_labels == desired_digit]
+    #     self.BATCH_SIZE = batch_size
+    #     self.train_labels = train_labels
+    """ I THINK WE SHOULD EITHER HAVE NO GLOBAL VARIABLES, 
+    OR MAKE THEM ALL GLOBAL (AND INITIALIZE THEM IN THE INIT) """
 
-        # BUFFER_SIZE = 60000
-        self.BATCH_SIZE = BATCH_SIZE
-
-        self.train_labels = train_labels
-
-
+    # CURRENTLY NOT USING THIS
     def calculate_ep(self, C, sigma, batch_size, epochs):
         # dan and Sean 
         pass
 
-
+    # CURRENTLY NOT USING THIS
     def calculate_clipping(self, sigma):
         # dan and Sean
         pass
@@ -92,8 +93,10 @@ class DP_LkGAN:
 
 
     @tf.function
-    def train_step(self, images, k, gamma, beta, alpha, sigma, c_val):
-        noise = tf.random.normal([self.BATCH_SIZE, self.noise_dim])
+    def train_step(self, images, batch_size, k, gamma, beta, alpha, sigma, c_val):
+    # def train_step(self, images, k, gamma, beta, alpha, sigma, c_val):
+        # noise = tf.random.normal([self.BATCH_SIZE, self.noise_dim])
+        noise = tf.random.normal([batch_size, self.noise_dim])
 
         with tf.GradientTape() as gen_tape, tf.GradientTape() as disc_tape:
             generated_images = self.generator(noise, training=True)
@@ -123,55 +126,67 @@ class DP_LkGAN:
         self.discriminator_optimizer.apply_gradients(zip(gradients_of_discriminator, self.discriminator.trainable_variables))
 
 
-    def train(self,                                
+    def train(self,
+                batch_size,
+                desired_digit,
                 alpha, # TODO: pass into train
                 beta, #
                 gamma, #
                 k, # TODO
                 c_val, # 
                 sigma):
+        
         start_time = time.time()
         for epoch in range(self.EPOCHS):
             start = time.time()
 
             for image_batch in self.train_dataset:
-                self.train_step(image_batch, k, gamma, beta, alpha, sigma, c_val)
+                self.train_step(image_batch, batch_size, k, gamma, beta, alpha, sigma, c_val)
         
             # Save the model every 15 epochs
             if (epoch + 1) % 15 == 0:
                 self.checkpoint.save(file_prefix = self.checkpoint_prefix)
 
             display.clear_output(wait=True)
-            print (f'Epoch {epoch+1} Completed...\n' +
-                f'\nTotal Runtime is {round(time.time()-start_time,2)}')
-                # f'\n\nThe FID score is: {calculate_fid()}\n\n')
+            print (f'Epoch {epoch+1} Completed...' +
+                f'\nTotal Runtime is {round(time.time()-start_time,2)}\n')
+                # f'\nThe FID score is: {calculate_fid()}\n\n')
 
         # Generate after the final epoch
-        display.clear_output(wait=True)
+        # display.clear_output(wait=True)
         # generate_and_save_images(generator,
         #                          epochs,
         #                          seed)
         
-        predictions = self.generator(seed, training=False)
-        strings = [str(x).replace(".", "_") for x in [alpha, beta, gamma, k, c_val, sigma]].join("-")
-        pickle.dump(predictions, open( f"vals_{strings}​​​​​.p", "wb" ))
+        predictions = self.generator(self.seed, training=False)
+        # the understanding is that if there is a zero in front of a digit, then it is a decimal
+        strings = f"d{desired_digit}_a{alpha}_b{beta}_g{gamma}_k{k}_c{c_val}_s{sigma}".replace(".", "")
+        # strings = "_".join([str(x).replace(".", "") for x in [alpha, beta, gamma, k, c_val, sigma]])
+        pickle.dump(predictions, open( f"gan_outputs/{strings}​​​​​.p", "wb" ))
 
-        print (f'Training Complete...\nSummary of data:\nSigma: {sigma}\n' + 
+        print (f'TRAINING COMPLETE\nSummary of data:\nSigma: {sigma}\n' + 
                 f'C:     {c_val}\nNumber of Epochs: {self.EPOCHS}\nAverage Epoch ' + 
                 f'Runtime is {round((time.time()-start_time)/self.EPOCHS,2)} sec\n' + 
                 f'Total Runtime is {round(time.time()-start_time,2)} sec')
                 # + f'\n\nThe Final FID score is: {calculate_fid()}')
 
 
-    def setup_experiment(self,  alpha, # TODO: pass into train
-                                beta, #
-                                gamma, #
-                                k, # TODO
-                                c_val, # 
-                                sigma, # 
-                                EPOCHS=100,
-                                noise_dim = 100,
-                                num_examples_to_generate = 128):
+    def train_gan(self,
+                    train_images,
+                    buffer_size,
+                    batch_size,
+                    desired_digit,
+                    alpha, # TODO: pass into train
+                    beta, #
+                    gamma, #
+                    k, # TODO
+                    c_val, # 
+                    sigma, # 
+                    epochs=100,
+                    noise_dim=100,
+                    num_examples_to_generate=128):
+
+        self.train_dataset = tf.data.Dataset.from_tensor_slices(train_images).shuffle(buffer_size).batch(batch_size)
 
         self.generator = self.make_generator_model()
         self.discriminator = self.make_discriminator_model()
@@ -182,26 +197,31 @@ class DP_LkGAN:
         self.checkpoint_dir = './training_checkpoints'
         self.checkpoint_prefix = os.path.join(self.checkpoint_dir, "ckpt")
         self.checkpoint = tf.train.Checkpoint(generator_optimizer=self.generator_optimizer,
-                                        discriminator_optimizer=self.discriminator_optimizer,
-                                        generator=self.generator,
-                                        discriminator=self.discriminator)
+                                                discriminator_optimizer=self.discriminator_optimizer,
+                                                generator=self.generator,
+                                                discriminator=self.discriminator)
 
         # generate seed value
-        self.seed = tf.random.normal([num_examples_to_generate, noise_dim])
+
+        """ I THINK WE SHOULD EITHER HAVE NO GLOBAL VARIABLES, 
+        OR MAKE THEM ALL GLOBAL (AND INITIALIZE THEM IN THE INIT) """
         self.noise_dim = noise_dim
-        self.EPOCHS = EPOCHS
+        self.seed = tf.random.normal([num_examples_to_generate, self.noise_dim])
+        self.EPOCHS = epochs
         print("hello, world")
-        self.train(alpha,beta,gamma,k,c_val,sigma)
+        self.train(batch_size,desired_digit,alpha,beta,gamma,k,c_val,sigma)
 
 
-    def train_experiment(self):
-        pass
 
 
-    def test_results(self, mnist, digit_one, digit_two, C, sigma):
-        pass
+# I THINK WE CAN DELETE THESE / move this to a new class:
 
+    # def train_experiment(self):
+    #     pass
 
-    def output_results(self, trained_gan_model):
-        random_vals = rand(128)
-        return gan.generate_models(random_vals)
+    # def test_results(self, mnist, digit_one, digit_two, C, sigma):
+    #     pass
+
+    # def output_results(self, trained_gan_model):
+    #     random_vals = rand(128)
+    #     return gan.generate_models(random_vals)
