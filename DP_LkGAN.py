@@ -27,9 +27,11 @@ class DP_LkGAN:
                     epochs=100,
                     noise_dim=100,
                     num_examples_to_generate=128):
-        
+
+        # we should probably figure out what style we want to use... all caps, no caps...
         self.BUFFER_SIZE =buffer_size
         self.BATCH_SIZE = batch_size
+        self.EPOCHS = epochs
         self.desired_digit = desired_digit
         self.alpha = alpha
         self.beta = beta
@@ -37,7 +39,6 @@ class DP_LkGAN:
         self.k = k
         self.c_val = c_val
         self.sigma = sigma
-        self.EPOCHS = epochs
         self.noise_dim = noise_dim
         self.num_examples_to_generate = num_examples_to_generate
         
