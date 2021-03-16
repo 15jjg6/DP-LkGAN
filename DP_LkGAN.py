@@ -2,9 +2,11 @@ import glob
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy as sp
+import pandas as pd
 import os
 import PIL
 import time
+import math
 
 from tensorflow.keras import layers
 from IPython import display
@@ -17,6 +19,7 @@ class DP_LkGAN:
     def __init__(self,
                     buffer_size,
                     batch_size,
+                    fid_test_size,
                     desired_digit,
                     alpha,
                     beta,
@@ -29,9 +32,10 @@ class DP_LkGAN:
                     num_examples_to_generate=128):
 
         # we should probably figure out what style we want to use... all caps, no caps...
-        self.BUFFER_SIZE =buffer_size
+        self.BUFFER_SIZE = buffer_size
         self.BATCH_SIZE = batch_size
         self.EPOCHS = epochs
+        self.fid_test_size = fid_test_size
         self.desired_digit = desired_digit
         self.alpha = alpha
         self.beta = beta
@@ -45,15 +49,44 @@ class DP_LkGAN:
         # generate seed value
         self.seed = tf.random.normal([self.num_examples_to_generate, self.noise_dim])
 
+        # Record and save FID scores
+        self.fid_df = []
+
+
     # CURRENTLY NOT USING THIS
-    def calculate_ep(self, C, sigma, batch_size, epochs):
-        # dan and Sean 
-        pass
+    def calculate_epsilon(self, c_val, sigma, epochs):
+        L = self.BATCH_SIZE
+        N = len(train_images)
+        q = L / N
+        delta = 0.0001 #10^5
+        T = len(train_dataset) #number of steps
+
+        return (q*math.sqrt(T*math.log(1/delta,10)))/self.sigma
 
     # CURRENTLY NOT USING THIS
     def calculate_clipping(self, sigma):
         # dan and Sean
         pass
+
+
+    def calculate_fid(self):
+        fake_images = self.generator(tf.random.normal([self.fid_test_size, self.noise_dim]))
+        fake_images = fake_images.numpy()
+        fake_images = fake_images.reshape(fake_images.shape[0], 28*28).astype('float32')
+        fake_images = (fake_images * 127.5 + 127.5) / 255.0
+        
+        fake_mu = fake_images.mean(axis=0)
+        fake_sigma = np.cov(np.transpose(fake_images))
+        
+        covSqrt = sp.linalg.sqrtm(np.matmul(fake_sigma, self.real_sigma))
+        
+        if np.iscomplexobj(covSqrt):
+            covSqrt = covSqrt.real
+        
+        # might have to replace the norm below with just the sum of difference squared.
+        fidScore = np.linalg.norm(self.real_mu - fake_mu) + np.trace(self.real_sigma + fake_sigma - 2 * covSqrt)
+        self.fid_df.append(fidScore)
+        return fidScore
 
 
     def make_generator_model(self):
@@ -146,6 +179,8 @@ class DP_LkGAN:
 
 
     def train(self):
+
+        print("\n__STARTING TRAINING__")
         
         start_time = time.time()
         for epoch in range(self.EPOCHS):
@@ -159,9 +194,9 @@ class DP_LkGAN:
                 self.checkpoint.save(file_prefix = self.checkpoint_prefix)
 
             display.clear_output(wait=True)
-            print (f'Epoch {epoch+1} Completed...' +
-                f'\nTotal Runtime is {round(time.time()-start_time,2)}\n')
-                # f'\nThe FID score is: {calculate_fid()}\n\n')
+            print (f'Epoch {epoch+1} Completed...\n' +
+                f'Total Runtime is {round(time.time()-start_time,2)}\n' +
+                f'The FID score is: {self.calculate_fid()}\n')
 
         # Generate after the final epoch
         # display.clear_output(wait=True)
@@ -170,19 +205,34 @@ class DP_LkGAN:
         #                          seed)
         
         predictions = self.generator(self.seed, training=False)
-        strings = f"d{self.desired_digit}_a{self.alpha}_b{self.beta}_g{self.gamma}_k{self.k}_c{self.c_val}_s{self.sigma}".replace(".", "")
-        pickle.dump(predictions, open( f"gan_outputs/{strings}​​​​​.p", "wb" ))
+        output_string = f"d{self.desired_digit}_a{self.alpha}_b{self.beta}_g{self.gamma}_k{self.k}_c{self.c_val}_s{self.sigma}".replace(".", "")
+        pickle.dump(predictions, open( f"gan_outputs/{output_string}​​​​​.p", "wb" ))
 
-        print (f'TRAINING COMPLETE\nSummary of data:\nSigma: {self.sigma}\n' + 
+        print (f'__TRAINING COMPLETE__\nSummary of data:\nSigma: {self.sigma}\n' + 
                 f'C:     {self.c_val}\nNumber of Epochs: {self.EPOCHS}\nAverage Epoch ' + 
                 f'Runtime is {round((time.time()-start_time)/self.EPOCHS,2)} sec\n' + 
-                f'Total Runtime is {round(time.time()-start_time,2)} sec')
-                # + f'\n\nThe Final FID score is: {calculate_fid()}')
+                f'Total Runtime is {round(time.time()-start_time,2)} sec\n' +
+                f'The Final FID score is: {self.calculate_fid()}\n________________\n')
+        
+        pd.DataFrame({'FID Scores':self.fid_df}).to_csv(f'fid_outputs/{output_string}.csv')
 
 
     def train_gan(self,train_images):
 
         self.train_dataset = tf.data.Dataset.from_tensor_slices(train_images).shuffle(self.BUFFER_SIZE).batch(self.BATCH_SIZE)
+
+        # Setup the FID calculations
+        fid_train_images = train_images[:self.fid_test_size]
+        # print(f"The size of fid training set is {len(fid_train_images)}")
+        fid_train_images = fid_train_images.reshape(fid_train_images.shape[0], 28 * 28).astype('float64')
+        fid_train_images = fid_train_images / 255.0
+        self.real_mu = fid_train_images.mean(axis=0)
+
+        fid_train_images = np.transpose(fid_train_images)
+        self.real_sigma = np.cov(fid_train_images)
+        
+        # print(f"the real mu is {self.real_mu}")
+        # print(f"the real sigma is {self.real_sigma}")
 
         self.generator = self.make_generator_model()
         self.discriminator = self.make_discriminator_model()
@@ -196,5 +246,11 @@ class DP_LkGAN:
                                                 discriminator_optimizer=self.discriminator_optimizer,
                                                 generator=self.generator,
                                                 discriminator=self.discriminator)
-        print("Starting Training")
         self.train()
+    
+
+    def plot_fid(self):
+        output_string = f"d{self.desired_digit}_a{self.alpha}_b{self.beta}_g{self.gamma}_k{self.k}_c{self.c_val}_s{self.sigma}".replace(".", "")
+        final_fid_df = pd.read_csv(f'fid_outputs/{output_string}.csv')
+        plt.plot(final_fid_df['FID Scores'])
+        plt.show()
