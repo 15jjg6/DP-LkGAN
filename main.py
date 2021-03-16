@@ -56,4 +56,6 @@ for pair in desired_pairs:
             evaluator.plot_fid()
 
             # TODO: plot/print the prediction confidence values
+            # TODO: Plot ROC_AUC curve...
             # TODO: plot FID (end of training) vs confidence over multiple sigma values.
+            # TODO: Figure out how to have multiple plots plotted separately (currently they all overlap)

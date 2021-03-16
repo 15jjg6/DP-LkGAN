@@ -69,19 +69,6 @@ class Evaluation:
     # plt.plot(prediction)
     # plt.show()
 
-    # # --------------- Still need to figure this out
-
-    # y_scores_forest = prediction[:,1]
-    # fpr_forest, tpr_forest, thresholds_forest = roc_curve(ground_truth,y_scores_forest)
-
-    # plt.plot(fpr_forest,tpr_forest,'r:',label="SGD")
-    # # plot_roc_curve(fpr_forest,tpr_forest,"Random Forest")
-    # plt.legend(loc="lower right")
-    # plt.show()
-
-
-    # roc_auc_score(ground_truth,y_scores_forest)
-
   
   def plot_fid(self):
     output_string = f"d{self.first_digit}_a{self.alpha}_b{self.beta}_g{self.gamma}_k{self.k}_c{self.c_val}_s{self.sigma}".replace(".", "")
@@ -90,6 +77,7 @@ class Evaluation:
     fid_df2 = pd.read_csv(f'fid_outputs/{output_string}.csv')
     plt.plot(fid_df1['FID Scores'])
     plt.plot(fid_df2['FID Scores'])
+    # TODO: Add labels to plot
 
     print(fid_df1)
     print(fid_df2)
