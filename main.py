@@ -1,5 +1,5 @@
 import DP_LkGAN as dpgan
-import Evaluation as eval
+import Evaluation as gan_eval
 import tensorflow as tf
 
 
@@ -14,35 +14,29 @@ desired_digit_values = [1,7]
 c_values = [10]
 sigma_values = [0.05]
 
+# TODO: Try running a GridSearch here...
+for desired_digit in desired_digit_values:
+    for c_val in c_values:
+        for sigma in sigma_values:
+            desired_train_images = train_images[train_labels == desired_digit]
+            buffer_size = len(desired_train_images)
 
-# Try running a GridSearch here...
-# for desired_digit in desired_digit_values:
-#     for c_val in c_values:
-#         for sigma in sigma_values:
-#             desired_train_images = train_images[train_labels == desired_digit]
-#             buffer_size = len(desired_train_images)
+            gan_instance = dpgan.DP_LkGAN(buffer_size=buffer_size,
+                                            batch_size=batch_size,
+                                            max_fid_test_size=max_fid_test_size,
+                                            desired_digit=desired_digit,
+                                            alpha=alpha,
+                                            beta=beta,
+                                            gamma=gamma,
+                                            k=k,
+                                            c_val=c_val,
+                                            sigma=sigma,
+                                            epochs=epochs,
+                                            noise_dim=noise_dim,
+                                            num_examples_to_generate=num_examples_to_generate)
 
-#             gan_instance = dpgan.DP_LkGAN(buffer_size=buffer_size,
-#                                             batch_size=batch_size,
-#                                             fid_test_size=max_fid_test_size,
-#                                             desired_digit=desired_digit,
-#                                             alpha=alpha,
-#                                             beta=beta,
-#                                             gamma=gamma,
-#                                             k=k,
-#                                             c_val=c_val,
-#                                             sigma=sigma,
-#                                             epochs=epochs,
-#                                             noise_dim=noise_dim,
-#                                             num_examples_to_generate=num_examples_to_generate)
-            
-#             gan_instance.train_gan(train_images=desired_train_images)
-#             gan_instance.plot_fid()
-
-
-
-
-
+            gan_instance.train_gan(train_images=desired_train_images)
+            gan_instance.plot_fid()
 
 
 desired_pairs = [[1,7]]
@@ -50,7 +44,7 @@ desired_pairs = [[1,7]]
 for pair in desired_pairs:
     for c_val in c_values:
         for sigma in sigma_values:
-            evaluator = eval.Evaluation(pair=pair,
+            evaluator = gan_eval.Evaluation(pair=pair,
                                             alpha=alpha,
                                             beta=beta,
                                             gamma=gamma,
@@ -61,6 +55,5 @@ for pair in desired_pairs:
             evaluator.evaluate_gan_output()
             evaluator.plot_fid()
 
-            #plot the FID scores...
-            #plot/print the confidence
-            #plot FID vs confidence over multiple sigma values.
+            # TODO: plot/print the prediction confidence values
+            # TODO: plot FID (end of training) vs confidence over multiple sigma values.

@@ -15,9 +15,9 @@ class Evaluation:
     self.alpha = alpha
     self.beta = beta
     self.gamma = gamma
-    self.k = k
     self.c_val = c_val
     self.sigma = sigma
+    self.k = k
 
 
   def get_gan_output(self,desired_digit):
@@ -63,10 +63,6 @@ class Evaluation:
 
     ground_truth = [1] * 128
     ground_truth.extend([1] * 128)
-
-    # print(avg_prediction_1)
-    # print()
-    # print(avg_prediction_0)
 
     for i in prediction: print(i)
 

@@ -19,7 +19,7 @@ class DP_LkGAN:
     def __init__(self,
                     buffer_size,
                     batch_size,
-                    fid_test_size,
+                    max_fid_test_size,
                     desired_digit,
                     alpha,
                     beta,
@@ -35,7 +35,7 @@ class DP_LkGAN:
         self.BUFFER_SIZE = buffer_size
         self.BATCH_SIZE = batch_size
         self.EPOCHS = epochs
-        self.fid_test_size = fid_test_size
+        self.max_fid_test_size = max_fid_test_size
         self.desired_digit = desired_digit
         self.alpha = alpha
         self.beta = beta
@@ -70,7 +70,7 @@ class DP_LkGAN:
 
 
     def calculate_fid(self):
-        fake_images = self.generator(tf.random.normal([self.fid_test_size, self.noise_dim]))
+        fake_images = self.generator(tf.random.normal([self.max_fid_test_size, self.noise_dim]))
         fake_images = fake_images.numpy()
         fake_images = fake_images.reshape(fake_images.shape[0], 28*28).astype('float32')
         fake_images = (fake_images * 127.5 + 127.5) / 255.0
@@ -214,25 +214,26 @@ class DP_LkGAN:
                 f'Total Runtime is {round(time.time()-start_time,2)} sec\n' +
                 f'The Final FID score is: {self.calculate_fid()}\n________________\n')
         
+        # save FID scores as csv
         pd.DataFrame({'FID Scores':self.fid_df}).to_csv(f'fid_outputs/{output_string}.csv')
 
 
-    def train_gan(self,train_images):
-
-        self.train_dataset = tf.data.Dataset.from_tensor_slices(train_images).shuffle(self.BUFFER_SIZE).batch(self.BATCH_SIZE)
-
+    def fid_setup(self,train_images):
         # Setup the FID calculations
-        fid_train_images = train_images[:self.fid_test_size]
-        # print(f"The size of fid training set is {len(fid_train_images)}")
+        fid_train_images = train_images[:self.max_fid_test_size]
         fid_train_images = fid_train_images.reshape(fid_train_images.shape[0], 28 * 28).astype('float64')
         fid_train_images = fid_train_images / 255.0
         self.real_mu = fid_train_images.mean(axis=0)
 
         fid_train_images = np.transpose(fid_train_images)
         self.real_sigma = np.cov(fid_train_images)
-        
-        # print(f"the real mu is {self.real_mu}")
-        # print(f"the real sigma is {self.real_sigma}")
+
+
+    def train_gan(self,train_images):
+
+        self.train_dataset = tf.data.Dataset.from_tensor_slices(train_images).shuffle(self.BUFFER_SIZE).batch(self.BATCH_SIZE)
+
+        self.fid_setup(train_images)
 
         self.generator = self.make_generator_model()
         self.discriminator = self.make_discriminator_model()
@@ -246,8 +247,9 @@ class DP_LkGAN:
                                                 discriminator_optimizer=self.discriminator_optimizer,
                                                 generator=self.generator,
                                                 discriminator=self.discriminator)
+
         self.train()
-    
+
 
     def plot_fid(self):
         output_string = f"d{self.desired_digit}_a{self.alpha}_b{self.beta}_g{self.gamma}_k{self.k}_c{self.c_val}_s{self.sigma}".replace(".", "")
