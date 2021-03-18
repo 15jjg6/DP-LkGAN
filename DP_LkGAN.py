@@ -7,6 +7,7 @@ import os
 import PIL
 import time
 import math
+import sys
 
 from tensorflow.keras import layers
 from IPython import display
@@ -181,6 +182,9 @@ class DP_LkGAN:
     def train(self):
 
         print("\n__STARTING TRAINING__")
+
+        recent_lowest = 0
+        fid_min = sys.maxsize
         
         start_time = time.time()
         for epoch in range(self.EPOCHS):
@@ -198,11 +202,15 @@ class DP_LkGAN:
                 f'Total Runtime is {round(time.time()-start_time,2)}\n' +
                 f'The FID score is: {self.calculate_fid()}\n')
 
-        # Generate after the final epoch
-        # display.clear_output(wait=True)
-        # generate_and_save_images(generator,
-        #                          epochs,
-        #                          seed)
+            # Training exit condition
+            if self.fid_df[-1] < fid_min:
+                fid_min = self.fid_df[-1]
+                recent_lowest = 0
+            else:
+                recent_lowest += 1
+            
+            if recent_lowest >= 5:
+                break
         
         predictions = self.generator(self.seed, training=False)
         output_string = f"d{self.desired_digit}_a{self.alpha}_b{self.beta}_g{self.gamma}_k{self.k}_c{self.c_val}_s{self.sigma}".replace(".", "")

@@ -47,9 +47,9 @@ class Evaluation:
   def evaluate_gan_output(self):
 
     results_for_0 = self.get_gan_output(self.second_digit)
-    # plt.imshow(results_for_0[0, :, :, 0], cmap='gray')
+    plt.imshow(results_for_0[0, :, :, 0], cmap='gray')
     results_for_1 = self.get_gan_output(self.first_digit)
-    # plt.imshow(results_for_1[0, :, :, 0], cmap='gray')
+    plt.imshow(results_for_1[0, :, :, 0], cmap='gray')
 
     results_for_0 = results_for_0.numpy().reshape(128, 784).astype('float64')
     results_for_1 = results_for_1.numpy().reshape(128, 784).astype('float64')
@@ -61,8 +61,8 @@ class Evaluation:
     avg_prediction_1 = prediction[:128].mean(axis=0)
     avg_prediction_0 = prediction[128:].mean(axis=0)
 
-    ground_truth = [1] * 128
-    ground_truth.extend([1] * 128)
+    # ground_truth = [1] * 128
+    # ground_truth.extend([1] * 128)
 
     for i in prediction: print(i)
 

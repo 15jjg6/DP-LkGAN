@@ -55,7 +55,12 @@ for pair in desired_pairs:
             evaluator.evaluate_gan_output()
             evaluator.plot_fid()
 
-            # TODO: plot/print the prediction confidence values
-            # TODO: Plot ROC_AUC curve...
+            # TODO: meh... plot/print the prediction confidence values
+            # TODO: meh... Plot ROC_AUC curve...
             # TODO: plot FID (end of training) vs confidence over multiple sigma values.
             # TODO: Figure out how to have multiple plots plotted separately (currently they all overlap)
+
+
+# TODO: Save the gan models
+# TODO: Actually run over multiple parameters
+# TODO: write training exit condition based on FID - it's actually done, double check that it's correct
