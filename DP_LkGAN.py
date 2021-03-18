@@ -183,6 +183,7 @@ class DP_LkGAN:
 
         print("\n__STARTING TRAINING__")
 
+        # make sure this fid exit function works
         recent_lowest = 0
         fid_min = sys.maxsize
         
@@ -202,6 +203,7 @@ class DP_LkGAN:
                 f'Total Runtime is {round(time.time()-start_time,2)}\n' +
                 f'The FID score is: {self.calculate_fid()}\n')
 
+            # make sure this fid exit function works
             # Training exit condition
             if self.fid_df[-1] < fid_min:
                 fid_min = self.fid_df[-1]

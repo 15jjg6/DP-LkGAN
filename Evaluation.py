@@ -55,7 +55,7 @@ class Evaluation:
     results_for_1 = results_for_1.numpy().reshape(128, 784).astype('float64')
 
     results = np.append(results_for_0, results_for_1, axis=0)
-
+ 
     prediction = self.forest_clf.predict_proba(results)
 
     avg_prediction_1 = prediction[:128].mean(axis=0)
