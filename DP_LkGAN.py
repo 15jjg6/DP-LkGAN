@@ -241,9 +241,11 @@ class DP_LkGAN:
 
     def train_gan(self,train_images):
 
-        self.train_dataset = tf.data.Dataset.from_tensor_slices(train_images).shuffle(self.BUFFER_SIZE).batch(self.BATCH_SIZE)
-
         self.fid_setup(train_images)
+        
+        train_images = train_images.reshape(train_images.shape[0], 28, 28, 1).astype('float32')
+        train_images = (train_images - 127.5) / 127.5
+        self.train_dataset = tf.data.Dataset.from_tensor_slices(train_images).shuffle(self.BUFFER_SIZE).batch(self.BATCH_SIZE)
 
         self.generator = self.make_generator_model()
         self.discriminator = self.make_discriminator_model()
@@ -264,6 +266,8 @@ class DP_LkGAN:
     def plot_fid(self):
         output_string = f"d{self.desired_digit}_a{self.alpha}_b{self.beta}_g{self.gamma}_k{self.k}_c{self.c_val}_s{self.sigma}".replace(".", "")
         final_fid_df = pd.read_csv(f'fid_outputs/{output_string}.csv')
+        plt.figure()
         plt.plot(final_fid_df['FID Scores'])
-        # TODO: Add labels to plot
+        plt.xlabel("Epochs")
+        plt.ylabel("FID Score")
         plt.show()

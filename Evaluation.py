@@ -69,16 +69,18 @@ class Evaluation:
     # plt.plot(prediction)
     # plt.show()
 
-  
+
   def plot_fid(self):
     output_string = f"d{self.first_digit}_a{self.alpha}_b{self.beta}_g{self.gamma}_k{self.k}_c{self.c_val}_s{self.sigma}".replace(".", "")
     fid_df1 = pd.read_csv(f'fid_outputs/{output_string}.csv')
+    plt.figure()
     output_string = f"d{self.second_digit}_a{self.alpha}_b{self.beta}_g{self.gamma}_k{self.k}_c{self.c_val}_s{self.sigma}".replace(".", "")
     fid_df2 = pd.read_csv(f'fid_outputs/{output_string}.csv')
+    plt.figure()
     plt.plot(fid_df1['FID Scores'])
     plt.plot(fid_df2['FID Scores'])
-    # TODO: Add labels to plot
-
+    plt.xlabel("Epochs")
+    plt.ylabel("FID Score")
     print(fid_df1)
     print(fid_df2)
 
