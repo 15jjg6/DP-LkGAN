@@ -18,8 +18,7 @@ class Evaluation:
     self.sigma_values = sigma_values
     self.k = k
     self.fid_scores = []
-    # self.confidence_scores = [50,49,47,44,41,40,39,38,36,37,38,39,40][:len(sigma_values)]
-    self.confidence_scores = [35,36,36,37,38,39,40,43,44,47,49,50][:len(sigma_values)]
+    self.confidence_scores = []
 
 
   def get_gan_output(self,sigma):
@@ -33,24 +32,18 @@ class Evaluation:
     return fid_df['FID Scores'].iat[-1]
 
 
-  def train_classifier(self):
-    # (X_train, y_train), (X_test, y_test) = tf.keras.datasets.mnist.load_data()
-    # X_train = X_train.reshape(60000,784)
-    # X_test = X_test.reshape(10000,784)
+  def get_predictions(self,results):
+ 
+    with open("mnist_classifier_model.pkl", 'rb') as file:
+      pickle_model = pickle.load(file)
 
-    # x_train_0 = X_train[y_train == self.desired_digit]
-    # x_train_1 = X_train[y_train != self.desired_digit]
-    # y_train_0 = y_train[y_train == self.desired_digit]
-    # y_train_1 = y_train[y_train != self.desired_digit]
-
-    # x_train_0_1 = np.append(x_train_0,x_train_1, axis=0)
-    # y_train_0_1 = np.append(y_train_0,y_train_1)
+    results = results.numpy().reshape(128, 784).astype('float64')
     
-    # print (np.unique(y_train_0_1))
+    predictions = pickle_model.predict_proba(results)
+    predictions_for_val = [pred[self.desired_digit] for pred in predictions]
+    confidence_in_digit = np.mean(predictions_for_val)
 
-    # self.forest_clf = RandomForestClassifier(random_state=10)
-    # self.forest_clf.fit(x_train_0_1, y_train_0_1)
-    pass
+    return confidence_in_digit
 
 
   def evaluate_gan_output(self):
@@ -63,16 +56,13 @@ class Evaluation:
       output_string = f"image_d{self.desired_digit}_a{self.alpha}_b{self.beta}_g{self.gamma}_k{self.k}_c{self.c_val}_s{sigma}".replace(".", "")
       fig.savefig(f"output_images/{output_string}.png")
 
-      # prediction_confidence = joes_classifier_function(results)  # will be a list of 128 confidence float values
-      # average_confidence = prediction_confidence.mean(axis=0)
-      
-      # self.confidence_scores.append(average_confidence)
+      average_confidence = self.get_predictions(results) 
+      self.confidence_scores.append(average_confidence)
 
       self.fid_scores.append(self.get_fid_output(sigma))
 
 
   def plot_fid_and_confidence(self):
-
     fig, ax1 = plt.subplots()
     color = 'tab:red'
     ax1.title.set_text(f'FID and Confidence vs. Sigma plot for digit {self.desired_digit}:')
