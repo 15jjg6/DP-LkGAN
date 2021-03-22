@@ -34,22 +34,23 @@ class Evaluation:
 
 
   def train_classifier(self):
-    (X_train, y_train), (X_test, y_test) = tf.keras.datasets.mnist.load_data()
-    X_train = X_train.reshape(60000,784)
-    X_test = X_test.reshape(10000,784)
+    # (X_train, y_train), (X_test, y_test) = tf.keras.datasets.mnist.load_data()
+    # X_train = X_train.reshape(60000,784)
+    # X_test = X_test.reshape(10000,784)
 
-    x_train_0 = X_train[y_train == self.first_digit]
-    x_train_1 = X_train[y_train == self.second_digit]
-    y_train_0 = y_train[y_train == self.first_digit]
-    y_train_1 = y_train[y_train == self.second_digit]
+    # x_train_0 = X_train[y_train == self.desired_digit]
+    # x_train_1 = X_train[y_train != self.desired_digit]
+    # y_train_0 = y_train[y_train == self.desired_digit]
+    # y_train_1 = y_train[y_train != self.desired_digit]
 
-    x_train_0_1 = np.append(x_train_0,x_train_1, axis=0)
-    y_train_0_1 = np.append(y_train_0,y_train_1)
+    # x_train_0_1 = np.append(x_train_0,x_train_1, axis=0)
+    # y_train_0_1 = np.append(y_train_0,y_train_1)
     
-    print (np.unique(y_train_0_1))
+    # print (np.unique(y_train_0_1))
 
-    self.forest_clf = RandomForestClassifier(random_state=10)
-    self.forest_clf.fit(x_train_0_1, y_train_0_1)
+    # self.forest_clf = RandomForestClassifier(random_state=10)
+    # self.forest_clf.fit(x_train_0_1, y_train_0_1)
+    pass
 
 
   def evaluate_gan_output(self):
