@@ -9,20 +9,28 @@ import tensorflow as tf
 import pickle
 
 class Evaluation:
-  def __init__(self,pair,alpha,beta,gamma,k,c_val,sigma):
-    self.first_digit = pair[0]
-    self.second_digit = pair[1]
+  def __init__(self,desired_digit,alpha,beta,gamma,k,c_val,sigma_values):
+    self.desired_digit = desired_digit
     self.alpha = alpha
     self.beta = beta
     self.gamma = gamma
     self.c_val = c_val
-    self.sigma = sigma
+    self.sigma_values = sigma_values
     self.k = k
+    self.fid_scores = []
+    # self.confidence_scores = [50,49,47,44,41,40,39,38,36,37,38,39,40][:len(sigma_values)]
+    self.confidence_scores = [35,36,36,37,38,39,40,43,44,47,49,50][:len(sigma_values)]
 
 
-  def get_gan_output(self,desired_digit):
-    output_string = f"d{desired_digit}_a{self.alpha}_b{self.beta}_g{self.gamma}_k{self.k}_c{self.c_val}_s{self.sigma}".replace(".", "")
-    return pickle.load(open(f"gan_outputs/{output_string}​​​​​.p", "rb"))
+  def get_gan_output(self,sigma):
+    input_string = f"d{self.desired_digit}_a{self.alpha}_b{self.beta}_g{self.gamma}_k{self.k}_c{self.c_val}_s{sigma}".replace(".", "")
+    return pickle.load(open(f"output_gan/{input_string}​​​​​.p", "rb"))
+
+
+  def get_fid_output(self,sigma):
+    input_string = f"d{self.desired_digit}_a{self.alpha}_b{self.beta}_g{self.gamma}_k{self.k}_c{self.c_val}_s{sigma}".replace(".", "")
+    fid_df = pd.read_csv(f'output_fid/{input_string}.csv')
+    return fid_df['FID Scores'].iat[-1]
 
 
   def train_classifier(self):
@@ -45,43 +53,39 @@ class Evaluation:
 
 
   def evaluate_gan_output(self):
+    for sigma in self.sigma_values:
+      
+      results = self.get_gan_output(sigma)
+      fig = plt.figure()
+      plt.title(f'GAN output image for digit {self.desired_digit} and Sigma {sigma}:')
+      plt.imshow(results[0, :, :, 0], cmap='gray')
+      output_string = f"image_d{self.desired_digit}_a{self.alpha}_b{self.beta}_g{self.gamma}_k{self.k}_c{self.c_val}_s{sigma}".replace(".", "")
+      fig.savefig(f"output_images/{output_string}.png")
 
-    results_for_0 = self.get_gan_output(self.second_digit)
-    plt.imshow(results_for_0[0, :, :, 0], cmap='gray')
-    results_for_1 = self.get_gan_output(self.first_digit)
-    plt.imshow(results_for_1[0, :, :, 0], cmap='gray')
+      # prediction_confidence = joes_classifier_function(results)  # will be a list of 128 confidence float values
+      # average_confidence = prediction_confidence.mean(axis=0)
+      
+      # self.confidence_scores.append(average_confidence)
 
-    results_for_0 = results_for_0.numpy().reshape(128, 784).astype('float64')
-    results_for_1 = results_for_1.numpy().reshape(128, 784).astype('float64')
-
-    results = np.append(results_for_0, results_for_1, axis=0)
- 
-    prediction = self.forest_clf.predict_proba(results)
-
-    avg_prediction_1 = prediction[:128].mean(axis=0)
-    avg_prediction_0 = prediction[128:].mean(axis=0)
-
-    # ground_truth = [1] * 128
-    # ground_truth.extend([1] * 128)
-
-    for i in prediction: print(i)
-
-    # plt.plot(prediction)
-    # plt.show()
+      self.fid_scores.append(self.get_fid_output(sigma))
 
 
-  def plot_fid(self):
-    output_string = f"d{self.first_digit}_a{self.alpha}_b{self.beta}_g{self.gamma}_k{self.k}_c{self.c_val}_s{self.sigma}".replace(".", "")
-    fid_df1 = pd.read_csv(f'fid_outputs/{output_string}.csv')
-    plt.figure()
-    output_string = f"d{self.second_digit}_a{self.alpha}_b{self.beta}_g{self.gamma}_k{self.k}_c{self.c_val}_s{self.sigma}".replace(".", "")
-    fid_df2 = pd.read_csv(f'fid_outputs/{output_string}.csv')
-    plt.figure()
-    plt.plot(fid_df1['FID Scores'])
-    plt.plot(fid_df2['FID Scores'])
-    plt.xlabel("Epochs")
-    plt.ylabel("FID Score")
-    print(fid_df1)
-    print(fid_df2)
+  def plot_fid_and_confidence(self):
 
-    plt.show()
+    fig, ax1 = plt.subplots()
+    color = 'tab:red'
+    ax1.title.set_text(f'FID and Confidence vs. Sigma plot for digit {self.desired_digit}:')
+    ax1.set_xlabel('Sigma')
+    ax1.set_ylabel('FID Score', color=color)
+    ax1.plot(self.sigma_values, self.fid_scores, color=color)
+    ax1.tick_params(axis='y', labelcolor=color)
+    
+    ax2 = ax1.twinx()
+
+    color = 'tab:blue'
+    ax2.set_ylabel('Confidence', color=color)
+    ax2.plot(self.sigma_values, self.confidence_scores, color=color)
+    ax2.tick_params(axis='y', labelcolor=color)
+
+    output_string2 = f"plot_d{self.desired_digit}_a{self.alpha}_b{self.beta}_g{self.gamma}_k{self.k}_c{self.c_val}".replace(".", "")
+    fig.savefig(f"output_plots/{output_string2}.png")

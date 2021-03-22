@@ -216,7 +216,7 @@ class DP_LkGAN:
         
         predictions = self.generator(self.seed, training=False)
         output_string = f"d{self.desired_digit}_a{self.alpha}_b{self.beta}_g{self.gamma}_k{self.k}_c{self.c_val}_s{self.sigma}".replace(".", "")
-        pickle.dump(predictions, open( f"gan_outputs/{output_string}​​​​​.p", "wb" ))
+        pickle.dump(predictions, open( f"output_gan/{output_string}​​​​​.p", "wb" ))
 
         print (f'__TRAINING COMPLETE__\nSummary of data:\nSigma: {self.sigma}\n' + 
                 f'C:     {self.c_val}\nNumber of Epochs: {self.EPOCHS}\nAverage Epoch ' + 
@@ -225,7 +225,7 @@ class DP_LkGAN:
                 f'The Final FID score is: {self.calculate_fid()}\n________________\n')
         
         # save FID scores as csv
-        pd.DataFrame({'FID Scores':self.fid_df}).to_csv(f'fid_outputs/{output_string}.csv')
+        pd.DataFrame({'FID Scores':self.fid_df}).to_csv(f'output_fid/{output_string}.csv')
 
 
     def fid_setup(self,train_images):
@@ -265,7 +265,7 @@ class DP_LkGAN:
 
     def plot_fid(self):
         output_string = f"d{self.desired_digit}_a{self.alpha}_b{self.beta}_g{self.gamma}_k{self.k}_c{self.c_val}_s{self.sigma}".replace(".", "")
-        final_fid_df = pd.read_csv(f'fid_outputs/{output_string}.csv')
+        final_fid_df = pd.read_csv(f'output_fid/{output_string}.csv')
         plt.figure()
         plt.plot(final_fid_df['FID Scores'])
         plt.xlabel("Epochs")
