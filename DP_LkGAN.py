@@ -183,8 +183,6 @@ class DP_LkGAN:
 
         print("\n__STARTING TRAINING__")
 
-        # make sure this fid exit function works
-        recent_lowest = 0
         fid_min = sys.maxsize
         
         start_time = time.time()
@@ -199,32 +197,29 @@ class DP_LkGAN:
                 self.checkpoint.save(file_prefix = self.checkpoint_prefix)
 
             display.clear_output(wait=True)
-            print (f'Epoch {epoch+1} Completed...\n' +
-                f'Total Runtime is {round(time.time()-start_time,2)}\n' +
+            print (f'Epoch {epoch+1} Completed for digit {self.desired_digit}...\n' + 
+                f'Sigma: {self.sigma}\nC:     {self.c_val}\nk:     {self.k}\nAverage Epoch ' + 
+                f'Runtime is {round((time.time()-start_time)/(epoch+1),2)} sec\n' + 
+                f'Total Runtime is {round(time.time()-start_time,2)} sec\n' +
                 f'The FID score is: {self.calculate_fid()}\n')
 
-            # make sure this fid exit function works
-            # Training exit condition
-            if self.fid_df[-1] < fid_min:
-                fid_min = self.fid_df[-1]
-                recent_lowest = 0
-            else:
-                recent_lowest += 1
-            
-            if recent_lowest >= 5:
-                break
-        
-        predictions = self.generator(self.seed, training=False)
-        output_string = f"d{self.desired_digit}_a{self.alpha}_b{self.beta}_g{self.gamma}_k{self.k}_c{self.c_val}_s{self.sigma}".replace(".", "")
-        pickle.dump(predictions, open( f"output_gan/{output_string}​​​​​.p", "wb" ))
+            if epoch >= 30:
+                if self.fid_df[-1] < fid_min:
+                    fid_min = self.fid_df[-1]
+                    predictions = self.generator(self.seed, training=False)
+                    output_string = f"d{self.desired_digit}_a{self.alpha}_b{self.beta}_g{self.gamma}_k{self.k}_c{self.c_val}_s{self.sigma}".replace(".", "")
+                    pickle.dump(predictions, open( f"output_gan/{output_string}​​​​​.p", "wb" ))
+                    # save FID scores as csv
+                    pd.DataFrame({'FID Scores':self.fid_df}).to_csv(f'output_bestfid/{output_string}.csv')
 
         print (f'__TRAINING COMPLETE__\nSummary of data:\nSigma: {self.sigma}\n' + 
-                f'C:     {self.c_val}\nNumber of Epochs: {self.EPOCHS}\nAverage Epoch ' + 
+                f'C:     {self.c_val}\nk:     {self.k}\nNumber of Epochs: {self.EPOCHS}\nAverage Epoch ' + 
                 f'Runtime is {round((time.time()-start_time)/self.EPOCHS,2)} sec\n' + 
                 f'Total Runtime is {round(time.time()-start_time,2)} sec\n' +
-                f'The Final FID score is: {self.calculate_fid()}\n________________\n')
+                f'The Final FID score is: {self.calculate_fid()}\n\n________________\n')
         
         # save FID scores as csv
+        output_string = f"d{self.desired_digit}_a{self.alpha}_b{self.beta}_g{self.gamma}_k{self.k}_c{self.c_val}_s{self.sigma}".replace(".", "")
         pd.DataFrame({'FID Scores':self.fid_df}).to_csv(f'output_fid/{output_string}.csv')
 
 
@@ -259,15 +254,16 @@ class DP_LkGAN:
                                                 discriminator_optimizer=self.discriminator_optimizer,
                                                 generator=self.generator,
                                                 discriminator=self.discriminator)
-
         self.train()
 
 
-    def plot_fid(self):
-        output_string = f"d{self.desired_digit}_a{self.alpha}_b{self.beta}_g{self.gamma}_k{self.k}_c{self.c_val}_s{self.sigma}".replace(".", "")
-        final_fid_df = pd.read_csv(f'output_fid/{output_string}.csv')
-        plt.figure()
+    def save_plot_fid(self):
+        input_string = f"d{self.desired_digit}_a{self.alpha}_b{self.beta}_g{self.gamma}_k{self.k}_c{self.c_val}_s{self.sigma}".replace(".", "")
+        final_fid_df = pd.read_csv(f'output_fid/{input_string}.csv')
+        fig = plt.figure()
+        plt.title(f'GAN FID Score progression through Epochs for digit {self.desired_digit} and Sigma {self.sigma}:')
         plt.plot(final_fid_df['FID Scores'])
-        plt.xlabel("Epochs")
+        plt.xlabel("Number of Epochs")
         plt.ylabel("FID Score")
-        plt.show()
+        output_string = f"fidplot_d{self.desired_digit}_a{self.alpha}_b{self.beta}_g{self.gamma}_k{self.k}_c{self.c_val}_s{self.sigma}".replace(".", "")
+        fig.savefig(f"output_fidplots/{output_string}.png")

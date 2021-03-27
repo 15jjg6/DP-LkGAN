@@ -28,7 +28,7 @@ class Evaluation:
 
   def get_fid_output(self,sigma):
     input_string = f"d{self.desired_digit}_a{self.alpha}_b{self.beta}_g{self.gamma}_k{self.k}_c{self.c_val}_s{sigma}".replace(".", "")
-    fid_df = pd.read_csv(f'output_fid/{input_string}.csv')
+    fid_df = pd.read_csv(f'output_bestfid/{input_string}.csv')
     return fid_df['FID Scores'].iat[-1]
 
 
@@ -48,7 +48,6 @@ class Evaluation:
 
   def evaluate_gan_output(self):
     for sigma in self.sigma_values:
-      
       results = self.get_gan_output(sigma)
       fig = plt.figure()
       plt.title(f'GAN output image for digit {self.desired_digit} and Sigma {sigma}:')
@@ -79,4 +78,7 @@ class Evaluation:
     ax2.tick_params(axis='y', labelcolor=color)
 
     output_string2 = f"plot_d{self.desired_digit}_a{self.alpha}_b{self.beta}_g{self.gamma}_k{self.k}_c{self.c_val}".replace(".", "")
-    fig.savefig(f"output_plots/{output_string2}.png")
+    fig.savefig(f"output_fid_conf_plots/{output_string2}.png")
+
+    output_string3 = f"table_d{self.desired_digit}_a{self.alpha}_b{self.beta}_g{self.gamma}_k{self.k}_c{self.c_val}".replace(".", "")
+    pd.DataFrame({'Sigma':self.sigma_values, 'FID Scores':self.fid_scores, 'Confidence':self.confidence_scores}).to_csv(f'output_fid_conf_tables/{output_string3}.csv')
